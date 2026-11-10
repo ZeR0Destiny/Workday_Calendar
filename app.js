@@ -18,7 +18,8 @@
   };
 
   let state = loadState();
-  let viewMonth = 0;
+  state.year = today.getFullYear();
+  let viewMonth = today.getMonth();
   let holidayMap = new Map();
   let selectedDate = null;
   let requestSequence = 0;

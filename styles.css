@@ -93,7 +93,7 @@ h2 { margin: 0; font-size: 22px; line-height: 1.3; }
 .calendar-tools { display: flex; align-items: center; gap: 12px; }
 .icon-button { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; background: white; color: #62716a; font-size: 16px; }
 .icon-button:hover { border-color: #b7c9bb; color: var(--accent); }
-.year-label { min-width: 42px; text-align: center; font: 700 14px Manrope, sans-serif; }
+.year-label { min-width: 0; white-space: nowrap; text-align: center; font: 700 12px Manrope, sans-serif; }
 .legend { display: flex; flex-wrap: wrap; gap: 20px; margin: 22px 0 14px; color: #68756f; font-size: 11px; }
 .legend span { display: inline-flex; align-items: center; gap: 7px; }
 .legend-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 4px; }
@@ -108,14 +108,14 @@ h2 { margin: 0; font-size: 22px; line-height: 1.3; }
 .holiday-status.is-fresh { color: var(--green-ink); }
 .status-spinner { width: 11px; height: 11px; border: 2px solid #dce8df; border-top-color: var(--accent); border-radius: 50%; animation: spin .75s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.calendar-grid { display: grid; grid-template-columns: minmax(0, 560px); justify-content: center; gap: 18px; }
-.month-card { min-width: 0; padding: 22px 20px 20px; border: 1px solid #e9ebe5; border-radius: 16px; background: white; box-shadow: 0 5px 16px rgba(30, 54, 44, .025); }
+.calendar-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.month-card { min-width: 0; padding: 17px 15px 15px; border: 1px solid #e9ebe5; border-radius: 16px; background: white; box-shadow: 0 5px 16px rgba(30, 54, 44, .025); }
 .month-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 13px; }
 .month-title h3 { margin: 0; font: 700 13px Manrope, sans-serif; }
 .month-title span { color: #a3aaa5; font-size: 9px; }
-.month-days, .month-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
-.weekday { padding-bottom: 6px; color: #a2aaa4; text-align: center; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-.day-cell { display: grid; position: relative; place-items: center; aspect-ratio: 1; min-width: 0; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #a8afaa; font-size: 13px; }
+.month-days, .month-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.weekday { padding-bottom: 5px; color: #a2aaa4; text-align: center; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+.day-cell { display: grid; position: relative; place-items: center; aspect-ratio: 1; min-width: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #a8afaa; font-size: 9px; }
 .day-cell.is-date { color: var(--ink); cursor: pointer; }
 .day-cell.is-date:hover { outline: 1px solid #829b89; }
 .day-cell.is-work { background: var(--work); color: var(--work-ink); font-weight: 700; }
@@ -142,15 +142,15 @@ h2 { margin: 0; font-size: 22px; line-height: 1.3; }
 .dialog-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 22px; }
 .dialog-actions .button { padding: 11px 14px; font-size: 11px; }
 
-@media (max-width: 860px) { .hero-illustration { right: -10px; opacity: .8; } }
+@media (max-width: 860px) { .calendar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; } .hero-illustration { right: -10px; opacity: .8; } }
 @media (max-width: 930px) { .schedule-patterns.is-biweekly { grid-template-columns: minmax(0, 1fr); } .pattern-panel .schedule-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
   .app-shell { width: min(100% - 30px, 480px); }
   .topbar { height: 65px; }.topbar-actions { gap: 8px; }.privacy-note { font-size: 10px; }.topbar .button { padding: 9px 10px; font-size: 11px; }
   .hero { min-height: 260px; align-items: start; padding-top: 38px; }.hero-copy { max-width: 270px; font-size: 12px; }.hero-illustration { right: -87px; width: 310px; height: 130px; opacity: .55; }.sun { right: 70px; width: 82px; height: 82px; }.sparkle-one { left: 22px; top: 18px; }
   .setup-card { padding: 22px 17px 19px; border-radius: 18px; }.step-pill { font-size: 8px; padding: 7px 8px; }.schedule-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }.schedule-day { padding: 10px 8px; }.schedule-day label { font-size: 10px; }.pattern-panel .schedule-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }.anchor-picker { margin-left: 0; }.schedule-footer { align-items: start; flex-direction: column; gap: 12px; }.schedule-actions { width: 100%; justify-content: flex-end; }.year-picker { flex-wrap: wrap; }
-  .calendar-section { padding-top: 47px; }.calendar-heading-row h2 { font-size: 23px; }.legend { gap: 11px; font-size: 10px; }.calendar-grid { grid-template-columns: minmax(0, 1fr); gap: 9px; }.month-card { padding: 16px 12px 14px; }.month-days, .month-week { gap: 4px; }.day-cell { border-radius: 7px; font-size: 11px; }.weekday { font-size: 8px; }
+  .calendar-section { padding-top: 47px; }.calendar-heading-row h2 { font-size: 23px; }.legend { gap: 11px; font-size: 10px; }.calendar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }.month-card { padding: 13px 9px 10px; }.day-cell { border-radius: 6px; font-size: 8px; }.weekday { font-size: 7px; }
   .footer-note { flex-direction: column; gap: 7px; margin-top: 37px; }
 }
-@media (max-width: 370px) { .schedule-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }.privacy-note { display: none; } }
+@media (max-width: 370px) { .calendar-grid { grid-template-columns: 1fr; }.schedule-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }.privacy-note { display: none; } }
 

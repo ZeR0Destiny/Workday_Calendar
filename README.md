@@ -1,6 +1,6 @@
 # Workday Calendar
 
-A small browser calendar for planning your work year. Set a weekly pattern or alternate Week A and Week B for a biweekly rotation, then browse the 12-month calendar with the left and right arrows. Each click shifts the displayed year-long window by one month. Workdays are gold, days off are green, Canada-wide federal and provincial holidays have black dots, Ontario-only holidays have red dots, and Québec-only holidays have blue dots. Select any calendar date to adjust its hours without changing the recurring pattern.
+A small browser calendar for planning your work year. Set a weekly pattern or alternate Week A and Week B for a biweekly rotation, then browse the 12-month calendar with the left and right arrows. Each click shifts the displayed year-long window by one month. Workdays are gold, days off are green, federal general holidays (including dates shared with Québec) have black dots, Québec-only statutory holidays have blue dots, and Ontario-only public holidays have red dots. Select any calendar date to adjust its hours without changing the recurring pattern.
 
 ## Run it locally
 
@@ -13,8 +13,10 @@ This is a static HTML, CSS, and JavaScript app. There is no build step, backend,
 
 ## Holidays and privacy
 
-- The app fetches Canadian public holidays for the selected year from the [Nager.Date API](https://date.nager.at/). Canada-wide holidays are shown in black; Ontario (`CA-ON`) and Québec (`CA-QC`) exclusive dates use red and blue respectively. It refreshes when the year changes or the page is opened.
-- If the service cannot be reached, the app uses the last successful holiday response saved in this browser. Holiday coverage and whether a day is observed can vary by employer and employment status; use your employer’s calendar for payroll or leave decisions.
+- Federal general holidays are calculated from the Canada Labour Code list: New Year’s Day, Good Friday, Victoria Day, Canada Day, Labour Day, National Day for Truth and Reconciliation, Thanksgiving, Remembrance Day, Christmas Day, and Boxing Day.
+- Québec statutory dates are calculated from CNESST rules: New Year’s Day; Good Friday or Easter Monday (the employer chooses one); National Patriots’ Day; Québec’s National Holiday; Canada Day; Labour Day; Thanksgiving; and Christmas Day. The calendar marks both Good Friday and Easter Monday as alternatives. It also marks the conditional June 25 observance when June 24 falls on a Sunday, and July 2 for Québec when July 1 falls on a Sunday.
+- Ontario-only public holidays are fetched from the [Nager.Date API](https://date.nager.at/) and cached in the browser. If the service is unavailable, the last successful Ontario data is used; federal and Québec dates continue to be calculated locally.
+- Holiday dots show statutory dates, but employers may arrange substitute days when a holiday lands on a non-work day. Use your employer’s calendar for your exact paid days off.
 - Your weekly or biweekly pattern and date adjustments are saved in this browser’s local storage when you select **Save schedule**. Each save replaces the previous saved schedule; individual date edits save immediately. They are not uploaded to GitHub or sent to a server. **Download backup** downloads a JSON copy; **Import schedule** restores one. Downloaded backups are separate files and your browser may add a number if a file with that name already exists.
 - Clearing browser storage removes the saved schedule. Keep an export if you want a backup.
 
@@ -28,7 +30,7 @@ This is a static HTML, CSS, and JavaScript app. There is no build step, backend,
 
 ## Data sources
 
-- [Nager.Date public holiday API](https://date.nager.at/)
 - [Government of Canada: General holidays for federally regulated employees](https://www.canada.ca/en/services/jobs/workplace/federal-labour-standards/vacations-holidays.html)
-- [Government of Québec: Public service holidays](https://www.quebec.ca/gouvernement/travailler-gouvernement/remuneration-avantages-sociaux/conditions-travail/jours-feries)
+- [CNESST: Québec statutory holidays](https://www.cnesst.gouv.qc.ca/en/working-conditions/leave/statutory-holidays/statutory-holidays)
+- [Nager.Date API](https://date.nager.at/)
 

@@ -121,11 +121,11 @@ h2 { margin: 0; font-size: 22px; line-height: 1.3; }
 .day-cell.is-work { background: var(--work); color: var(--work-ink); font-weight: 700; }
 .day-cell.is-off { background: var(--green); color: var(--green-ink); }
 .day-cell.is-today { outline: 1px solid #527b63; outline-offset: 1px; }
-.day-marker { position: absolute; top: 2px; width: 7px; height: 7px; border: 1px solid #fff; border-radius: 50%; content: ""; box-shadow: 0 0 2px rgba(0, 0, 0, .55); pointer-events: none; }
+.day-marker { position: absolute; top: 2px; width: 10px; height: 10px; border: 1px solid #fff; border-radius: 50%; content: ""; box-shadow: 0 0 0 1px rgba(32, 45, 43, .45), 0 1px 3px rgba(0, 0, 0, .4); pointer-events: none; }
 .day-marker.shared-marker { right: 2px; background: #000000; }
 .day-marker.ontario-marker { right: 2px; background: #C82909; }
 .day-marker.quebec-marker { right: 2px; background: #0B70F4; }
-.day-marker.ontario-marker + .day-marker.quebec-marker { right: 9px; }
+.day-marker.ontario-marker + .day-marker.quebec-marker { right: 12px; }
 .calendar-hint { margin: 15px 0 0; color: #969f99; font-size: 10px; }
 .footer-note { display: flex; justify-content: space-between; gap: 20px; margin: 54px 0 25px; padding-top: 18px; border-top: 1px solid var(--line); color: #9ba49e; font-size: 10px; }
 .day-dialog { width: min(420px, calc(100% - 28px)); padding: 29px; border: 1px solid #e8ebe4; border-radius: 20px; color: var(--ink); box-shadow: 0 25px 80px rgba(25, 40, 34, .2); }

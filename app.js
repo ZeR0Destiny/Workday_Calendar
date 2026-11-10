@@ -277,14 +277,18 @@
       const key = toKey(year, month, day);
       const hours = Object.hasOwn(state.overrides, key) ? state.overrides[key] : getPatternHours(date);
       const holiday = holidayMap.get(key);
-      const scopes = holiday ? (holiday.canada ? ["Federal and provincial holiday"] : [holiday.ontario ? "Ontario-only holiday" : "", holiday.quebec ? "Québec-only holiday" : ""].filter(Boolean)) : [];
+      const scopes = holiday ? [
+        holiday.federal ? "Federal general holiday" : "",
+        holiday.quebec ? "Québec statutory holiday" : "",
+        holiday.ontario && !holiday.federal && !holiday.quebec ? "Ontario-only public holiday" : ""
+      ].filter(Boolean) : [];
       const holidayDetails = holiday ? `${scopes.join(" and ")}: ${holiday.names.join(", ")}` : "";
       const classes = ["day-cell", "is-date", hours > 0 ? "is-work" : "is-off", key === todayKey ? "is-today" : ""].filter(Boolean).join(" ");
-      const title = `${MONTHS[month]} ${day}, ${year}: ${hours} work hours${holidayDetails ? `; ${holidayDetails}` : ""}`;
-      const sharedDot = holiday?.canada ? '<span class="day-marker shared-marker" aria-hidden="true"></span>' : "";
-      const ontarioDot = !holiday?.canada && holiday?.ontario ? '<span class="day-marker ontario-marker" aria-hidden="true"></span>' : "";
-      const quebecDot = !holiday?.canada && holiday?.quebec ? '<span class="day-marker quebec-marker" aria-hidden="true"></span>' : "";
-      cells.push(`<button class="${classes}" type="button" data-date="${key}" title="${escapeAttribute(title)}" aria-label="${escapeAttribute(title)}"><span>${day}</span>${sharedDot}${ontarioDot}${quebecDot}</button>`);
+      const title = `${MONTHS[month]} ${day}, ${year}: ${hours} work hours${holidayDetails ? `; ${holidayDetails}` : ""}${holiday?.notes?.length ? `; ${holiday.notes.join("; ")}` : ""}`;
+      const federalDot = holiday?.federal ? '<span class="day-marker shared-marker" aria-hidden="true"></span>' : "";
+      const ontarioDot = holiday?.ontario && !holiday?.federal && !holiday?.quebec ? '<span class="day-marker ontario-marker" aria-hidden="true"></span>' : "";
+      const quebecDot = holiday?.quebec && !holiday?.federal ? '<span class="day-marker quebec-marker" aria-hidden="true"></span>' : "";
+      cells.push(`<button class="${classes}" type="button" data-date="${key}" title="${escapeAttribute(title)}" aria-label="${escapeAttribute(title)}"><span>${day}</span>${federalDot}${ontarioDot}${quebecDot}</button>`);
     }
     const weekdays = SHORT_DAYS.map((day) => `<span class="weekday">${day}</span>`).join("");
     return `<article class="month-card"><div class="month-title"><h3>${MONTHS[month]}</h3><span>${year}</span></div><div class="month-week">${weekdays}</div><div class="month-days">${cells.join("")}</div></article>`;
@@ -299,9 +303,91 @@
     return (useWeekB ? state.weekBHours : state.weeklyHours)[date.getDay()];
   }
 
+  function buildStatutoryHolidays(years) {
+    const holidays = new Map();
+    const add = (date, name, { federal = false, quebec = false, note = "" } = {}) => {
+      const key = toKey(date.getFullYear(), date.getMonth(), date.getDate());
+      const entry = holidays.get(key) || { names: [], notes: [], federal: false, ontario: false, quebec: false };
+      if (!entry.names.includes(name)) entry.names.push(name);
+      if (note && !entry.notes.includes(note)) entry.notes.push(note);
+      entry.federal ||= federal;
+      entry.quebec ||= quebec;
+      holidays.set(key, entry);
+    };
+
+    for (const year of years) {
+      const easter = easterSunday(year);
+      const goodFriday = new Date(year, easter.getMonth(), easter.getDate() - 2);
+      const easterMonday = new Date(year, easter.getMonth(), easter.getDate() + 1);
+      const patriotsAndVictoriaDay = mondayBefore(year, 4, 25);
+      const labourDay = nthWeekdayOfMonth(year, 8, 1, 1);
+      const thanksgiving = nthWeekdayOfMonth(year, 9, 1, 2);
+      const goodFridayChoice = "Québec employers choose either Good Friday or Easter Monday.";
+
+      add(new Date(year, 0, 1), "New Year's Day", { federal: true, quebec: true });
+      add(goodFriday, "Good Friday", { federal: true, quebec: true, note: goodFridayChoice });
+      add(easterMonday, "Easter Monday (Québec employer option)", { quebec: true, note: goodFridayChoice });
+      add(patriotsAndVictoriaDay, "Victoria Day", { federal: true });
+      add(patriotsAndVictoriaDay, "National Patriots' Day", { quebec: true });
+
+      const canadaDay = new Date(year, 6, 1);
+      add(canadaDay, "Canada Day", { federal: true, quebec: canadaDay.getDay() !== 0 });
+      if (canadaDay.getDay() === 0) {
+        add(new Date(year, 6, 2), "Canada Day (Québec statutory date)", { quebec: true, note: "In Québec, the statutory date moves to July 2 when July 1 is a Sunday." });
+      }
+
+      add(labourDay, "Labour Day", { federal: true, quebec: true });
+      add(new Date(year, 8, 30), "National Day for Truth and Reconciliation", { federal: true });
+      add(thanksgiving, "Thanksgiving Day", { federal: true, quebec: true });
+      add(new Date(year, 10, 11), "Remembrance Day", { federal: true });
+      add(new Date(year, 11, 25), "Christmas Day", { federal: true, quebec: true });
+      add(new Date(year, 11, 26), "Boxing Day", { federal: true });
+
+      const quebecNationalHoliday = new Date(year, 5, 24);
+      add(quebecNationalHoliday, "Québec National Holiday", { quebec: true });
+      if (quebecNationalHoliday.getDay() === 0) {
+        add(new Date(year, 5, 25), "Québec National Holiday (conditional observance)", {
+          quebec: true,
+          note: "The day off moves to June 25 for employees who do not normally work Sundays."
+        });
+      }
+    }
+    return holidays;
+  }
+
+  function easterSunday(year) {
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
+  }
+
+  function mondayBefore(year, month, day) {
+    const date = new Date(year, month, day - 1);
+    while (date.getDay() !== 1) date.setDate(date.getDate() - 1);
+    return date;
+  }
+
+  function nthWeekdayOfMonth(year, month, weekday, occurrence) {
+    const first = new Date(year, month, 1);
+    const offset = (weekday - first.getDay() + 7) % 7;
+    return new Date(year, month, 1 + offset + (occurrence - 1) * 7);
+  }
+
   async function loadHolidays(years) {
     const sequence = ++requestSequence;
-    holidayMap = new Map();
+    holidayMap = buildStatutoryHolidays(years);
     renderCalendar();
     setHolidayStatus("Checking current holiday dates…", "loading");
     const controller = new AbortController();
@@ -313,8 +399,8 @@
           if (!response.ok) throw new Error(`Holiday service returned ${response.status}`);
           const payload = await response.json();
           if (!Array.isArray(payload)) throw new Error("Holiday data was not in the expected format");
-          const relevant = payload.filter((holiday) => holiday.global === true || (Array.isArray(holiday.counties) && (holiday.counties.includes("CA-ON") || holiday.counties.includes("CA-QC"))));
-          try { localStorage.setItem(`workday.holidays.${year}`, JSON.stringify({ fetchedAt: Date.now(), holidays: relevant })); }
+          const relevant = payload.filter((holiday) => !holiday.global && Array.isArray(holiday.counties) && holiday.counties.includes("CA-ON") && (!Array.isArray(holiday.types) || holiday.types.includes("Public")));
+          try { localStorage.setItem(`workday.ontario-holidays.v1.${year}`, JSON.stringify({ fetchedAt: Date.now(), holidays: relevant })); }
           catch { /* Live dates still work when browser storage is unavailable. */ }
           return { year, holidays: relevant, cached: false };
         } catch {
@@ -324,27 +410,26 @@
       }));
       if (sequence !== requestSequence) return;
       const merged = new Map();
+      for (const [date, holiday] of holidayMap) merged.set(date, holiday);
       for (const result of results) {
         for (const [date, holiday] of groupHolidays(result.holidays)) {
-          const existing = merged.get(date) || { names: [], canada: false, ontario: false, quebec: false };
+          const existing = merged.get(date) || { names: [], notes: [], federal: false, ontario: false, quebec: false };
           for (const name of holiday.names) if (!existing.names.includes(name)) existing.names.push(name);
-          existing.canada ||= holiday.canada;
           existing.ontario ||= holiday.ontario;
-          existing.quebec ||= holiday.quebec;
           merged.set(date, existing);
         }
       }
       holidayMap = merged;
       if (results.some((result) => result.unavailable)) {
-        setHolidayStatus("Holiday service is unavailable. Check your connection and refresh to try again.", "error");
+        setHolidayStatus("Ontario holiday data is unavailable; federal and Québec statutory dates are still shown.", "error");
       } else if (results.some((result) => result.cached)) {
-        setHolidayStatus("Using saved holiday dates for part of this calendar window.", "error");
+        setHolidayStatus("Using saved Ontario holiday data; federal and Québec statutory dates are calculated for these years.", "error");
       } else {
-        setHolidayStatus(`Holiday dates refreshed from Nager.Date · ${holidayMap.size} Canada-wide, Ontario, and Québec dates`, "fresh");
+        setHolidayStatus(`Federal and Québec statutory dates calculated · Ontario public dates refreshed from Nager.Date`, "fresh");
       }
     } catch {
       if (sequence !== requestSequence) return;
-      setHolidayStatus("Holiday service is unavailable. Check your connection and refresh to try again.", "error");
+      setHolidayStatus("Ontario holiday data is unavailable; federal and Québec statutory dates are still shown.", "error");
     } finally {
       clearTimeout(timeout);
       if (sequence === requestSequence) renderCalendar();
@@ -355,12 +440,10 @@
     const grouped = new Map();
     for (const holiday of holidays) {
       if (!holiday || typeof holiday.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(holiday.date)) continue;
-      const entry = grouped.get(holiday.date) || { names: [], canada: false, quebec: false };
+      const entry = grouped.get(holiday.date) || { names: [], notes: [], federal: false, ontario: false, quebec: false };
       const name = holiday.localName || holiday.name || "Public holiday";
       if (!entry.names.includes(name)) entry.names.push(name);
-      entry.canada ||= holiday.global === true;
       entry.ontario ||= Array.isArray(holiday.counties) && holiday.counties.includes("CA-ON");
-      entry.quebec ||= Array.isArray(holiday.counties) && holiday.counties.includes("CA-QC");
       grouped.set(holiday.date, entry);
     }
     return grouped;
@@ -368,7 +451,7 @@
 
   function readHolidayCache(year) {
     try {
-      const saved = JSON.parse(localStorage.getItem(`workday.holidays.${year}`));
+      const saved = JSON.parse(localStorage.getItem(`workday.ontario-holidays.v1.${year}`));
       return saved && Array.isArray(saved.holidays) && Number.isFinite(saved.fetchedAt) ? saved : null;
     } catch { return null; }
   }
@@ -385,8 +468,12 @@
     const currentHours = Object.hasOwn(state.overrides, key) ? state.overrides[key] : defaultHours;
     els.dialogTitle.textContent = new Date(year, month - 1, day).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
     const holiday = holidayMap.get(key);
-    const holidayScopes = holiday ? (holiday.canada ? ["Federal and provincial"] : [holiday.ontario ? "Ontario-only" : "", holiday.quebec ? "Québec-only" : ""].filter(Boolean)) : [];
-    els.dialogHoliday.textContent = holiday ? `${holidayScopes.join(" + ")} · ${holiday.names.join(" · ")}` : "";
+    const holidayScopes = holiday ? [
+      holiday.federal ? "Federal general holiday" : "",
+      holiday.quebec ? "Québec statutory holiday" : "",
+      holiday.ontario && !holiday.federal && !holiday.quebec ? "Ontario-only public holiday" : ""
+    ].filter(Boolean) : [];
+    els.dialogHoliday.textContent = holiday ? [...holidayScopes, ...holiday.names, ...holiday.notes].join(" · ") : "";
     els.dayHours.value = String(currentHours);
     els.dayDialog.showModal();
     els.dayHours.focus();

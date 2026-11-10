@@ -1,13 +1,13 @@
 # Workday Calendar
 
-A small browser calendar for planning your work year. Set a weekly pattern or alternate Week A and Week B for a biweekly rotation, then see workdays in orange, days off in green, Canada-wide federal and provincial holidays with black dots, Ontario-only holidays with red dots, and Québec-only holidays with blue dots. Select any calendar date to adjust its hours without changing the recurring pattern.
+A small browser calendar for planning your work year. Set a weekly pattern or alternate Week A and Week B for a biweekly rotation, then browse month by month with the left and right arrows. Workdays are gold, days off are green, Canada-wide federal and provincial holidays have black dots, Ontario-only holidays have red dots, and Québec-only holidays have blue dots. Select any calendar date to adjust its hours without changing the recurring pattern.
 
 ## Run it locally
 
 1. Open this folder in Visual Studio Code.
 2. Open `index.html` in your browser. For the smoothest experience, serve the folder with the VS Code **Live Server** extension.
 3. Choose **Every week** or **Every 2 weeks**. For a biweekly pattern, enter hours for both weeks and choose the Monday that starts Week A.
-4. Choose a year and select **Save schedule**.
+4. Choose a calendar year and select **Save schedule**. Click a work-hour field to select its current value, then type the replacement.
 
 This is a static HTML, CSS, and JavaScript app. There is no build step, backend, account, or dependency to install.
 

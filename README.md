@@ -1,6 +1,6 @@
 # Workday Calendar
 
-A small browser calendar for planning your work year. Set a weekly pattern or alternate Week A and Week B for a biweekly rotation, then browse month by month with the left and right arrows. Workdays are gold, days off are green, Canada-wide federal and provincial holidays have black dots, Ontario-only holidays have red dots, and Québec-only holidays have blue dots. Select any calendar date to adjust its hours without changing the recurring pattern.
+A small browser calendar for planning your work year. Set a weekly pattern or alternate Week A and Week B for a biweekly rotation, then browse the 12-month calendar with the left and right arrows. Each click shifts the displayed year-long window by one month. Workdays are gold, days off are green, Canada-wide federal and provincial holidays have black dots, Ontario-only holidays have red dots, and Québec-only holidays have blue dots. Select any calendar date to adjust its hours without changing the recurring pattern.
 
 ## Run it locally
 

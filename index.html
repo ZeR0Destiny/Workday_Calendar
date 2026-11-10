@@ -49,7 +49,7 @@
         </div>
         <div class="schedule-patterns" id="schedulePatterns" aria-label="Work hours by week"></div>
         <div class="schedule-footer">
-          <label class="year-picker" for="yearSelect"><span>Show me</span><select id="yearSelect" aria-label="Calendar year"></select><span>in a full-year view</span></label>
+          <label class="year-picker" for="yearSelect"><span>Calendar year</span><select id="yearSelect" aria-label="Calendar year"></select></label>
           <div class="schedule-actions"><button class="button button-quiet" id="resetButton" type="button">Reset</button><button class="button button-primary" id="saveButton" type="button">Save schedule <span aria-hidden="true">↗</span></button></div>
         </div>
         <p id="saveStatus" class="save-status" role="status" aria-live="polite"></p>
@@ -58,7 +58,7 @@
       <section class="calendar-section" aria-labelledby="calendarHeading">
         <div class="calendar-heading-row">
           <div><p class="eyebrow">YOUR PERSONAL YEAR</p><h2 id="calendarHeading">Your calendar</h2></div>
-          <div class="calendar-tools"><button class="icon-button" id="prevYear" type="button" aria-label="Previous year">←</button><span id="calendarYearLabel" class="year-label"></span><button class="icon-button" id="nextYear" type="button" aria-label="Next year">→</button></div>
+          <div class="calendar-tools"><button class="icon-button" id="prevMonth" type="button" aria-label="Previous month">←</button><span id="calendarYearLabel" class="year-label"></span><button class="icon-button" id="nextMonth" type="button" aria-label="Next month">→</button></div>
         </div>
         <div class="legend" aria-label="Calendar legend">
           <span><i class="legend-swatch work-swatch"></i>Workday</span><span><i class="legend-swatch off-swatch"></i>Day off</span><span><i class="legend-holiday shared-holiday">•</i>Federal and provincial</span><span><i class="legend-holiday ontario-holiday">•</i>Ontario-only</span><span><i class="legend-holiday quebec-holiday">•</i>Québec-only</span>
@@ -77,7 +77,7 @@
       <button class="dialog-close" value="cancel" aria-label="Close">×</button>
       <p class="eyebrow">DAY DETAILS</p><h2 id="dialogTitle">Edit this day</h2><p id="dialogHoliday" class="dialog-holiday"></p>
       <label class="hours-label" for="dayHours">Hours scheduled</label>
-      <div class="hours-input-wrap"><input id="dayHours" type="number" min="0" max="24" step="0.25" inputmode="decimal"><span>hours</span></div>
+      <div class="hours-input-wrap"><input id="dayHours" type="text" inputmode="decimal" autocomplete="off"><span>hours</span></div>
       <p class="dialog-help">Leave at 0 for a day off. This changes only this date, not your weekly pattern.</p>
       <div class="dialog-actions"><button class="button button-quiet" id="clearOverride" type="button">Use weekly pattern</button><button class="button button-primary" id="saveDay" value="save" type="submit">Save day</button></div>
     </form>

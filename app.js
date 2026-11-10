@@ -18,7 +18,7 @@
   };
 
   let state = loadState();
-  let viewMonth = state.year === today.getFullYear() ? today.getMonth() : 0;
+  let viewMonth = 0;
   let holidayMap = new Map();
   let selectedDate = null;
   let requestSequence = 0;
@@ -26,7 +26,7 @@
   renderYearOptions();
   renderScheduleInputs();
   renderCalendar();
-  loadHolidays(state.year);
+  loadHolidays(visibleYears());
 
   document.querySelector("#saveButton").addEventListener("click", () => {
     if (!validateWeeklyInputs()) return;
@@ -53,10 +53,10 @@
 
   els.yearSelect.addEventListener("change", () => {
     state.year = Number(els.yearSelect.value);
-    viewMonth = state.year === today.getFullYear() ? today.getMonth() : 0;
+    viewMonth = 0;
     saveState();
     renderCalendar();
-    loadHolidays(state.year);
+    loadHolidays(visibleYears());
   });
   document.querySelector("#weeklyPattern").addEventListener("click", () => setPatternType("weekly"));
   document.querySelector("#biweeklyPattern").addEventListener("click", () => setPatternType("biweekly"));
@@ -230,22 +230,40 @@
   }
 
   function changeMonth(offset) {
+    const previousYears = visibleYears();
     const absoluteMonth = state.year * 12 + viewMonth + offset;
     const year = Math.floor(absoluteMonth / 12);
     if (year < 1900 || year > 9999) return;
-    const previousYear = state.year;
     state.year = year;
     viewMonth = ((absoluteMonth % 12) + 12) % 12;
     renderYearOptions();
     saveState();
     renderCalendar();
-    if (year !== previousYear) loadHolidays(year);
+    const nextYears = visibleYears();
+    if (nextYears.join(",") !== previousYears.join(",")) loadHolidays(nextYears);
   }
 
   function renderCalendar() {
     els.yearSelect.value = String(state.year);
-    els.yearLabel.textContent = `${MONTHS[viewMonth]} ${state.year}`;
-    els.calendarGrid.innerHTML = renderMonth(state.year, viewMonth);
+    const startAbsoluteMonth = state.year * 12 + viewMonth;
+    const fragments = [];
+    for (let index = 0; index < 12; index += 1) {
+      const absoluteMonth = startAbsoluteMonth + index;
+      const year = Math.floor(absoluteMonth / 12);
+      const month = ((absoluteMonth % 12) + 12) % 12;
+      fragments.push(renderMonth(year, month));
+    }
+    const lastAbsoluteMonth = startAbsoluteMonth + 11;
+    const lastYear = Math.floor(lastAbsoluteMonth / 12);
+    const lastMonth = ((lastAbsoluteMonth % 12) + 12) % 12;
+    els.yearLabel.textContent = `${MONTHS[viewMonth].slice(0, 3)} ${state.year} – ${MONTHS[lastMonth].slice(0, 3)} ${lastYear}`;
+    els.calendarGrid.innerHTML = fragments.join("");
+  }
+
+  function visibleYears() {
+    const firstYear = state.year;
+    const lastYear = Math.floor((state.year * 12 + viewMonth + 11) / 12);
+    return firstYear === lastYear ? [firstYear] : [firstYear, lastYear];
   }
 
   function renderMonth(year, month) {
@@ -268,7 +286,7 @@
       cells.push(`<button class="${classes}" type="button" data-date="${key}" title="${escapeAttribute(title)}" aria-label="${escapeAttribute(title)}"><span>${day}</span>${sharedDot}${ontarioDot}${quebecDot}</button>`);
     }
     const weekdays = SHORT_DAYS.map((day) => `<span class="weekday">${day}</span>`).join("");
-    return `<article class="month-card"><div class="month-week">${weekdays}</div><div class="month-days">${cells.join("")}</div></article>`;
+    return `<article class="month-card"><div class="month-title"><h3>${MONTHS[month]}</h3><span>${year}</span></div><div class="month-week">${weekdays}</div><div class="month-days">${cells.join("")}</div></article>`;
   }
 
   function getPatternHours(date) {
@@ -280,7 +298,7 @@
     return (useWeekB ? state.weekBHours : state.weeklyHours)[date.getDay()];
   }
 
-  async function loadHolidays(year) {
+  async function loadHolidays(years) {
     const sequence = ++requestSequence;
     holidayMap = new Map();
     renderCalendar();
@@ -288,25 +306,44 @@
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 9000);
     try {
-      const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/CA`, { cache: "no-cache", signal: controller.signal });
-      if (!response.ok) throw new Error(`Holiday service returned ${response.status}`);
-      const payload = await response.json();
-      if (!Array.isArray(payload)) throw new Error("Holiday data was not in the expected format");
-      const relevant = payload.filter((holiday) => holiday.global === true || (Array.isArray(holiday.counties) && (holiday.counties.includes("CA-ON") || holiday.counties.includes("CA-QC"))));
-      holidayMap = groupHolidays(relevant);
-      try { localStorage.setItem(`workday.holidays.${year}`, JSON.stringify({ fetchedAt: Date.now(), holidays: relevant })); }
-      catch { /* Live dates still work when browser storage is unavailable. */ }
+      const results = await Promise.all(years.map(async (year) => {
+        try {
+          const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/CA`, { cache: "no-cache", signal: controller.signal });
+          if (!response.ok) throw new Error(`Holiday service returned ${response.status}`);
+          const payload = await response.json();
+          if (!Array.isArray(payload)) throw new Error("Holiday data was not in the expected format");
+          const relevant = payload.filter((holiday) => holiday.global === true || (Array.isArray(holiday.counties) && (holiday.counties.includes("CA-ON") || holiday.counties.includes("CA-QC"))));
+          try { localStorage.setItem(`workday.holidays.${year}`, JSON.stringify({ fetchedAt: Date.now(), holidays: relevant })); }
+          catch { /* Live dates still work when browser storage is unavailable. */ }
+          return { year, holidays: relevant, cached: false };
+        } catch {
+          const cached = readHolidayCache(year);
+          return { year, holidays: cached?.holidays ?? [], cached: Boolean(cached), unavailable: !cached };
+        }
+      }));
       if (sequence !== requestSequence) return;
-      setHolidayStatus(`Holiday dates refreshed from Nager.Date · ${holidayMap.size} Canada-wide, Ontario, and Québec dates`, "fresh");
-    } catch (error) {
-      if (sequence !== requestSequence) return;
-      const cached = readHolidayCache(year);
-      if (cached) {
-        holidayMap = groupHolidays(cached.holidays);
-        setHolidayStatus(`Using saved holiday dates · Last refreshed ${new Date(cached.fetchedAt).toLocaleDateString()}`, "error");
-      } else {
-        setHolidayStatus("Holiday service is unavailable. Check your connection and refresh to try again.", "error");
+      const merged = new Map();
+      for (const result of results) {
+        for (const [date, holiday] of groupHolidays(result.holidays)) {
+          const existing = merged.get(date) || { names: [], canada: false, ontario: false, quebec: false };
+          for (const name of holiday.names) if (!existing.names.includes(name)) existing.names.push(name);
+          existing.canada ||= holiday.canada;
+          existing.ontario ||= holiday.ontario;
+          existing.quebec ||= holiday.quebec;
+          merged.set(date, existing);
+        }
       }
+      holidayMap = merged;
+      if (results.some((result) => result.unavailable)) {
+        setHolidayStatus("Holiday service is unavailable. Check your connection and refresh to try again.", "error");
+      } else if (results.some((result) => result.cached)) {
+        setHolidayStatus("Using saved holiday dates for part of this calendar window.", "error");
+      } else {
+        setHolidayStatus(`Holiday dates refreshed from Nager.Date · ${holidayMap.size} Canada-wide, Ontario, and Québec dates`, "fresh");
+      }
+    } catch {
+      if (sequence !== requestSequence) return;
+      setHolidayStatus("Holiday service is unavailable. Check your connection and refresh to try again.", "error");
     } finally {
       clearTimeout(timeout);
       if (sequence === requestSequence) renderCalendar();
@@ -385,12 +422,12 @@
         anchorDate: parseDateKey(imported.anchorDate) ? imported.anchorDate : mondayKey(today),
         overrides: sanitizeOverrides(imported.overrides)
       };
-      viewMonth = state.year === today.getFullYear() ? today.getMonth() : 0;
+      viewMonth = 0;
       renderYearOptions();
       renderScheduleInputs();
       const saved = saveState();
       renderCalendar();
-      loadHolidays(state.year);
+      loadHolidays(visibleYears());
       if (saved) els.saveStatus.textContent = "Schedule imported and saved on this device.";
     } catch (error) {
       els.saveStatus.textContent = error instanceof SyntaxError ? "That file is not valid schedule JSON." : error.message || "Could not import that schedule.";

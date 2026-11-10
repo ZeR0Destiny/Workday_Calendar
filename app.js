@@ -18,6 +18,7 @@
   };
 
   let state = loadState();
+  let viewMonth = state.year === today.getFullYear() ? today.getMonth() : 0;
   let holidayMap = new Map();
   let selectedDate = null;
   let requestSequence = 0;
@@ -52,6 +53,7 @@
 
   els.yearSelect.addEventListener("change", () => {
     state.year = Number(els.yearSelect.value);
+    viewMonth = state.year === today.getFullYear() ? today.getMonth() : 0;
     saveState();
     renderCalendar();
     loadHolidays(state.year);
@@ -63,8 +65,11 @@
     els.saveStatus.textContent = "";
     renderCalendar();
   });
-  document.querySelector("#prevYear").addEventListener("click", () => changeYear(state.year - 1));
-  document.querySelector("#nextYear").addEventListener("click", () => changeYear(state.year + 1));
+  document.querySelector("#prevMonth").addEventListener("click", () => changeMonth(-1));
+  document.querySelector("#nextMonth").addEventListener("click", () => changeMonth(1));
+  document.querySelector("#schedulePatterns").addEventListener("focusin", (event) => {
+    if (event.target.matches('input[type="text"]')) event.target.select();
+  });
   els.calendarGrid.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-date]");
     if (button) openDay(button.dataset.date);
@@ -84,8 +89,8 @@
     event.preventDefault();
     if (!selectedDate) return;
     const hours = Number(els.dayHours.value);
-    if (!Number.isFinite(hours) || hours < 0 || hours > 24) {
-      els.dayHours.setCustomValidity("Enter a number from 0 to 24.");
+    if (!Number.isFinite(hours) || hours < 0 || hours > 24 || !Number.isInteger(hours * 4)) {
+      els.dayHours.setCustomValidity("Enter a value from 0 to 24 in quarter-hour increments.");
       els.dayHours.reportValidity();
       return;
     }
@@ -96,6 +101,7 @@
     if (saved) els.dayDialog.close();
   });
   els.dayHours.addEventListener("input", () => els.dayHours.setCustomValidity(""));
+  els.dayHours.addEventListener("focus", () => els.dayHours.select());
 
   function loadState() {
     try {
@@ -138,7 +144,8 @@
   function validateWeeklyInputs() {
     const inputs = [...document.querySelectorAll("[data-week-hours] input")];
     for (const input of inputs) {
-      if (input.validity.valid && Number.isInteger(Number(input.value) * 4)) continue;
+      const hours = Number(input.value);
+      if (input.value.trim() === "" || (Number.isFinite(hours) && hours >= 0 && hours <= 24 && Number.isInteger(hours * 4))) continue;
       input.setCustomValidity("Enter a value from 0 to 24 in quarter-hour increments.");
       input.reportValidity();
       input.focus();
@@ -199,7 +206,7 @@
   function renderPatternPanel(key, title, hours, longLabels) {
     const days = WEEKDAYS.map((day, index) => {
       const label = longLabels ? day : SHORT_DAYS[index];
-      return `<div class="schedule-day"><label for="hours-${key}-${index}">${label}</label><div class="hours-entry"><input id="hours-${key}-${index}" type="number" min="0" max="24" step="0.25" value="${hours[index]}" inputmode="decimal" aria-label="Week ${key.toUpperCase()} hours worked on ${day}"><span class="hours-suffix">hrs</span></div></div>`;
+      return `<div class="schedule-day"><label for="hours-${key}-${index}">${label}</label><div class="hours-entry"><input id="hours-${key}-${index}" type="text" value="${hours[index]}" inputmode="decimal" autocomplete="off" aria-label="Week ${key.toUpperCase()} hours worked on ${day}"><span class="hours-suffix">hrs</span></div></div>`;
     }).join("");
     return `<section class="pattern-panel"><h3>${title}</h3><div class="schedule-grid" data-week-hours="${key}">${days}</div></section>`;
   }
@@ -222,21 +229,23 @@
     els.saveStatus.textContent = "";
   }
 
-  function changeYear(year) {
+  function changeMonth(offset) {
+    const absoluteMonth = state.year * 12 + viewMonth + offset;
+    const year = Math.floor(absoluteMonth / 12);
     if (year < 1900 || year > 9999) return;
+    const previousYear = state.year;
     state.year = year;
+    viewMonth = ((absoluteMonth % 12) + 12) % 12;
     renderYearOptions();
     saveState();
     renderCalendar();
-    loadHolidays(year);
+    if (year !== previousYear) loadHolidays(year);
   }
 
   function renderCalendar() {
-    els.yearLabel.textContent = String(state.year);
-    const year = state.year;
-    const fragments = [];
-    for (let month = 0; month < 12; month += 1) fragments.push(renderMonth(year, month));
-    els.calendarGrid.innerHTML = fragments.join("");
+    els.yearSelect.value = String(state.year);
+    els.yearLabel.textContent = `${MONTHS[viewMonth]} ${state.year}`;
+    els.calendarGrid.innerHTML = renderMonth(state.year, viewMonth);
   }
 
   function renderMonth(year, month) {
@@ -259,7 +268,7 @@
       cells.push(`<button class="${classes}" type="button" data-date="${key}" title="${escapeAttribute(title)}" aria-label="${escapeAttribute(title)}"><span>${day}</span>${sharedDot}${ontarioDot}${quebecDot}</button>`);
     }
     const weekdays = SHORT_DAYS.map((day) => `<span class="weekday">${day}</span>`).join("");
-    return `<article class="month-card"><div class="month-title"><h3>${MONTHS[month]}</h3><span>${String(month + 1).padStart(2, "0")}</span></div><div class="month-week">${weekdays}</div><div class="month-days">${cells.join("")}</div></article>`;
+    return `<article class="month-card"><div class="month-week">${weekdays}</div><div class="month-days">${cells.join("")}</div></article>`;
   }
 
   function getPatternHours(date) {
@@ -376,6 +385,7 @@
         anchorDate: parseDateKey(imported.anchorDate) ? imported.anchorDate : mondayKey(today),
         overrides: sanitizeOverrides(imported.overrides)
       };
+      viewMonth = state.year === today.getFullYear() ? today.getMonth() : 0;
       renderYearOptions();
       renderScheduleInputs();
       const saved = saveState();
